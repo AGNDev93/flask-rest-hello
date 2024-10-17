@@ -8,7 +8,7 @@ from flask_swagger import swagger
 from flask_cors import CORS
 from utils import APIException, generate_sitemap
 from admin import setup_admin
-from models import db, User
+from models import db, User,Favorites, People, Planets
 #from models import Person
 
 app = Flask(__name__)
@@ -38,12 +38,27 @@ def sitemap():
 
 @app.route('/user', methods=['GET'])
 def handle_hello():
+    results=User.query.all()
+    response=[ item.serialize() for item in results ]
+    return jsonify(response)    
 
-    response_body = {
-        "msg": "Hello, this is your GET /user response "
-    }
+@app.route('/favorites', methods=['GET'])
+def favorites_all():
+    results=Favorites.query.all()
+    response=[ item.serialize() for item in results ]
+    return jsonify(response)
 
-    return jsonify(response_body), 200
+@app.route('/people', methods=['GET'])
+def people_all():
+    results=People.query.all()
+    response=[ item.serialize() for item in results ]
+    return jsonify(response)
+
+@app.route('/planets', methods=['GET'])
+def planets_all():
+    results=Planets.query.all()
+    response=[ item.serialize() for item in results ]
+    return jsonify(response)
 
 # this only runs if `$ python src/app.py` is executed
 if __name__ == '__main__':
