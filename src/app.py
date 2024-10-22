@@ -8,7 +8,7 @@ from flask_swagger import swagger
 from flask_cors import CORS
 from utils import APIException, generate_sitemap
 from admin import setup_admin
-from models import db, User,Favorites, People, Planets
+from models import db, User,Favorite, People, Planet
 #from models import Person
 
 app = Flask(__name__)
@@ -36,7 +36,7 @@ def handle_invalid_usage(error):
 def sitemap():
     return generate_sitemap(app)
 
-@app.route('/user', methods=['GET'])
+@app.route('/users', methods=['GET'])
 def handle_hello():
     results=User.query.all()
     if results==[]:
@@ -51,13 +51,12 @@ def list_user(user_id):
         return jsonify({"Message": "Not found"}),404
     return jsonify(results.serialize()), 200
 
-@app.route('/favorites', methods=['GET'])
-def favorites_all():
-    results=Favorites.query.all()
-    if results==[]:
+@app.route('/user/<int:user_id>/favorites', methods=['GET'])
+def favorites_all(user_id):
+    user=User.query.get(user_id)
+    if user is None:
         return jsonify({"Message": "Not found"}),404
-    response=[ item.serialize() for item in results ]
-    return jsonify(response),200
+    return jsonify(user.serialize_favorites()),200
 
 @app.route('/people', methods=['GET'])
 def people_all():
@@ -69,64 +68,69 @@ def people_all():
 
 @app.route('/people/<int:people_id>', methods=['GET'])
 def list_people(people_id):
-    results=People.query.filter_by(id=people_id).first()
+    results=People.query.get(people_id)
     if results is None:
         return jsonify({"Message": "Not found"}),404
     return jsonify(results.serialize()), 200
 
 @app.route('/planets', methods=['GET'])
 def planets_all():
-    results=Planets.query.all()
+    results=Planet.query.all()
     if results==[]:
         return jsonify({"Message": "Not found"}),404
     response=[ item.serialize() for item in results ]
     return jsonify(response), 200
 
 
-@app.route('/planets/<int:planet_id>', methods=['GET'])
+@app.route('/planet/<int:planet_id>', methods=['GET'])
 def list_planet(planet_id):
-    results=Planets.query.filter_by(id=planet_id).first()
+    results=Planet.query.get(planet_id)
     if results is None:
         return jsonify({"Message": "Not found"}),404
     return jsonify(results.serialize()), 200
 
 
-@app.route('/people', methods=['POST'])
-def add_new_people():
-    request_body = request.get_json(force=True)
-    new_people=People(
-        name=request_body["name"],
-        age=request_body["age"],
-        occupation=request_body["occupation"],
-        address=request_body["address"],
-        is_active=request_body["is_active"]
+@app.route('/favorite/user/<int:user_id>/people/<int:people_id>', methods=['POST'])
+def add_new_favorite_people(user_id, people_id):
+    new_favorite=Favorite(
+        user_id=user_id,
+        people_id=people_id
     )
-    db.session.add(new_people)
+    db.session.add(new_favorite)
     db.session.commit()
-    return jsonify({"message": "People create"}), 201
+    return jsonify({"message": "Favorite created"}), 201
 
-@app.route('/planet', methods=['POST'])
-def add_new_planet():
-    request_body = request.get_json(force=True)
-    new_planet=Planets(
-        name=request_body["name"],
-        galaxy=request_body["galaxy"],
-        type_of_inhabitant=request_body["type_of_inhabitant"],
-        inhabitant_height=request_body["inhabitant_height"],
-        is_active=request_body["is_active"]
-    )
-    db.session.add(new_planet)
-    db.session.commit()
-    return jsonify({"message": "Planet create"}), 201
-
-@app.route('/people/<int:people_id>', methods=['DELETE'])
-def delete_people(people_id):
-    results=People.query.filter_by(id=people_id).first()
-    if results is None:
+@app.route('/favorite/user/<int:user_id>/people/<int:people_id>', methods=['DELETE'])
+def delete_one_favorite_people(user_id, people_id):
+    favorite=Favorite.query.filter_by(user_id=user_id, people_id=people_id).first()
+    if favorite is None:
         return jsonify({"Message": "Not found"}),404
-    db.session.delete(results)
+    db.session.delete(favorite)
     db.session.commit()
-    return jsonify({"message": "People delete"}), 200
+    return jsonify({"message": "Favorite deleted"}), 201
+
+
+@app.route('/favorite/user/<int:user_id>/planet/<int:planet_id>', methods=['POST'])
+def add_new_favorite_planet(user_id, planet_id):
+    new_favorite=Favorite(
+        user_id=user_id,
+        planet_id=planet_id
+    )
+    db.session.add(new_favorite)
+    db.session.commit()
+    return jsonify({"message": "Favorite created"}), 201
+
+@app.route('/favorite/user/<int:user_id>/planet/<int:planet_id>', methods=['DELETE'])
+def delete_one_favorite_planet(user_id, planet_id):
+    favorite=Favorite.query.filter_by(user_id=user_id, planet_id=planet_id).first()
+    if favorite is None:
+        return jsonify({"Message": "Not found"}),404
+    db.session.delete(favorite)
+    db.session.commit()
+    return jsonify({"message": "Favorite deleted"}), 201
+
+
+
 
 
 # this only runs if `$ python src/app.py` is executed

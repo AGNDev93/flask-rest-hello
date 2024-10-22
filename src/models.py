@@ -6,10 +6,12 @@ db = SQLAlchemy()
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(120), unique=True, nullable=False)
+    name = db.Column(db.String(120), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
-    password = db.Column(db.String(100), unique=False, nullable=False)
-    is_active = db.Column(db.Boolean(), unique=False, nullable=False)
+    password = db.Column(db.String(100), nullable=False)
+    is_active = db.Column(db.Boolean(), nullable=False)
+
+    favorites=db.relationship("Favorite", back_populates="user", lazy=True)
 
     def __repr__(self):
         return '<User %r>' % self.name
@@ -20,8 +22,12 @@ class User(db.Model):
             "name": self.name,
             "email": self.email
         }
+    def serialize_favorites(self):
+        return [favorite.serialize() for favorite in self.favorites]
 
-class Favorites(db.Model):
+        
+
+class Favorite(db.Model):
     id=db.Column(db.Integer, primary_key=True)
     user_id =db.Column(db.Integer, db.ForeignKey('user.id'))
     user=db.relationship("User")
@@ -29,17 +35,19 @@ class Favorites(db.Model):
     people_id =db.Column(db.Integer, db.ForeignKey('people.id'))
     people=db.relationship("People")
 
-    planets_id =db.Column(db.Integer, db.ForeignKey('planets.id'))
-    planets=db.relationship("Planets")
+    planet_id =db.Column(db.Integer, db.ForeignKey('planet.id'))
+    planet=db.relationship("Planet")
 
     def __repr__(self):
-        return '<Favorites %r>' % self.name
+        return '<Favorite %r>' % self.id
         
     def serialize(self):
         return {
             "id": self.id,
+            "user": self.user.serialize() if self.user is not None else "",
             "people": self.people.serialize() if self.people is not None else "",
-            "planets": self.planets.serialize() if self.planets is not None else "",
+            "planets": self.planet.serialize() if self.planet is not None else "",
+
         }
 
 
@@ -52,7 +60,7 @@ class People(db.Model):
     is_active = db.Column(db.Boolean(), unique=False, nullable=False)
 
     def __repr__(self):
-        return '<User %r>' % self.name
+        return '<People %r>' % self.name
         
 
     def serialize(self):
@@ -64,7 +72,7 @@ class People(db.Model):
             "address": self.address
         }
 
-class Planets(db.Model):
+class Planet(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120), unique=True, nullable=False)
     galaxy = db.Column(db.String(100), unique=False, nullable=False)
@@ -73,7 +81,7 @@ class Planets(db.Model):
     is_active = db.Column(db.Boolean(), unique=False, nullable=False)
 
     def __repr__(self):
-        return '<User %r>' % self.name
+        return '<Planet %r>' % self.name
         
 
     def serialize(self):
